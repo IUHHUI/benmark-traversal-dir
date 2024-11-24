@@ -33,4 +33,5 @@ build/
 .DS_Store
 
 ### this project ###
-linux/*.so
+crt/*.so
+crt/*.dylib

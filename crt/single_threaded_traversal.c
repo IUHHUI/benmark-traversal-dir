@@ -6,6 +6,8 @@
 #include <stdatomic.h>
 #include "single_threaded_traversal.h"
 
+static char *QUEUE_END_FLAG = "EOF";
+
 void producer_travel_dir0(TravelArg *task, char *dirPath, DIR *dir)
 {
     struct dirent *entry;
@@ -71,7 +73,7 @@ static void *producer(void *arg)
     TravelArg *t = (TravelArg *)arg;
     producer_travel_dir(t->path, "/", t);
 
-    queue_enqueue(t->queue, "EOF");
+    queue_enqueue(t->queue, strdup(QUEUE_END_FLAG));
     return NULL;
 }
 
@@ -89,8 +91,9 @@ static void *consumer(void *arg)
     while (1)
     {
         char *filename = queue_dequeue(t->queue);
-        if (strcmp(filename, "EOF") == 0)
+        if (strcmp(filename, QUEUE_END_FLAG) == 0)
         {
+            free(filename);
             break;
         }
         else if (is_endwith(filename, t->suffix_matcher))

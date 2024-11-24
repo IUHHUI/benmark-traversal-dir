@@ -19,8 +19,8 @@ public class Main {
         int type = Integer.parseInt(args[0]);
         TraversalType traversalType = from(type);
         if (traversalType.name().toLowerCase(Locale.ROOT).startsWith("jnr")) {
-            if (!CRT.getOSIdentifier().equalsIgnoreCase("linux")) {
-                System.err.println(traversalType + " only support on linux.");
+            if (CRT.getOSIdentifier().startsWith("win")) {
+                System.err.println(traversalType + "not support on windows.");
                 return;
             }
         }

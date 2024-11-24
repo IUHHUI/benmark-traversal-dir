@@ -7,6 +7,8 @@
 
 #define THREAD_POOL_SIZE 6
 
+static char *QUEUE_END_FLAG = "EOF";
+
 typedef struct
 {
     pthread_t thread_id;
@@ -62,7 +64,7 @@ void *producer_iter_dir(void *arg)
     pthread_mutex_lock(&iter_task_queue_mutex);
     iter_task_queue_size--;
     task->thread_id=0;
-    queue_enqueue(task->queue_sub_dir, "EOF");
+    queue_enqueue(task->queue_sub_dir, strdup(QUEUE_END_FLAG));
     pthread_cond_signal(&iter_task_queue_not_full);
     pthread_mutex_unlock(&iter_task_queue_mutex);
     return NULL;
@@ -77,7 +79,7 @@ void producer_add_task(char *dirPath, Queue *queue_sub_dir, TravelArg *travel_ar
     }
 
     iter_task_queue_size++;
-    IterDirTask *new_task;
+    IterDirTask *new_task = NULL;
     for (size_t i = 0; i < THREAD_POOL_SIZE; i++)
     {
         IterDirTask *task = &iter_task_queue[i];
@@ -106,7 +108,7 @@ static void *producer(void *arg) {
 
     while (1) {
         char *s = queue_dequeue(&q_sub_dir);
-        if (strcmp(s, "EOF") == 0)
+        if (strcmp(s, QUEUE_END_FLAG) == 0)
         {
             eof_count++;
             if (task_count > 0 && task_count == eof_count)
@@ -124,7 +126,7 @@ static void *producer(void *arg) {
     queue_destroy(&q_sub_dir);
 
     // stop consumer
-    queue_enqueue(t->queue, "EOF");
+    queue_enqueue(t->queue, strdup(QUEUE_END_FLAG));
     return NULL;
 }
 
@@ -142,8 +144,9 @@ static void *consumer(void *arg)
     while (1)
     {
         char *filename = queue_dequeue(t->queue);
-        if (strcmp(filename, "EOF") == 0)
+        if (strcmp(filename, QUEUE_END_FLAG) == 0)
         {
+            free(filename);
             break;
         }
         else if (is_endwith(filename, t->suffix_matcher))
